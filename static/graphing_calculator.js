@@ -60,6 +60,7 @@ gridlineSpacingInput.oninput = function() {
     }
 }
 
+// Get line width input
 const lineWidthInput = document.getElementById('lineWidthInput');
 let lineWidth = 1;
 lineWidthInput.oninput = function() {
@@ -192,6 +193,7 @@ function makeFunction() {
     sanitized = sanitized.replace(/(\d)\(/, "$1*(")
                  .replace(/\)(\d)/, ")*$1"); // Add * between numbers and parentheses
     sanitized = sanitized.replace(/\)\(/g, ")*("); // Add * between opposing parentheses
+    sanitized = sanitized.replace(/x(\d)/g, "x*$1");
     sanitized = sanitized.replace(/sin/g, "Math.sin")
                  .replace(/cos/g, "Math.cos")
                  .replace(/tan/g, "Math.tan")
@@ -238,7 +240,7 @@ function plot(func, offsetX, offsetY) {
         }
         else {
             y.push({x: i, y: Infinity});
-        }    
+        }
     }
     // Draw the function
     ctx.beginPath();
@@ -248,7 +250,7 @@ function plot(func, offsetX, offsetY) {
             ctx.lineTo(y[i].x, y[i].y);
         }
         else {
-            ctx.moveTo(y[i+1].x, 0)
+            ctx.moveTo(y[i+1].x, 0);
         }
     }
     ctx.stroke();
@@ -263,7 +265,7 @@ Outputs: if string is valid, return string
          else return null
 */
 function validateInput(string) {
-    const regex = /^[0-9+\-*/()^x\s]*(\b(sin|cos|tan|log|sqrt|exp|pi|e)\b[0-9+\-*/()^x\s]*)*$/;
+    const regex = /^[0-9+\.\-*/()^x\s]*(\b(sin|cos|tan|log|sqrt|exp|pi|e)\b[0-9+\-*/()^x\s]*)*$/;
     if (regex.test(string)) {
         return validateParentheses(string);
     }
@@ -317,24 +319,8 @@ Draws the axes and gridlines in the canvas
 function drawGraph() {
     const gridSpacing = gridlineSpacing*8*zoomLevel;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw axes
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 5*zoomLevel*lineWidth;
-    //if (ctx.lineWidth < 1) {ctx.lineWidth = 1;}
-    ctx.beginPath();
-
-    // x-axis
     const yAxisPos = canvas.height/2 - offsetY + panY
-    ctx.moveTo(0, yAxisPos);
-    ctx.lineTo(canvas.width, yAxisPos);
-
-    // y-axis
     const xAxisPos = canvas.width/2 - offsetX + panX
-    ctx.moveTo(xAxisPos, 0);
-    ctx.lineTo(xAxisPos, canvas.height);
-    
-    ctx.stroke();
 
     // Draw gridlines
     ctx.strokeStyle = "lightgray";
@@ -363,8 +349,27 @@ function drawGraph() {
         ctx.lineTo(canvas.width, i);
     }
     ctx.stroke();
+
+    // Draw axes
+    ctx.strokeStyle = "gray";
+    ctx.lineWidth = 5*zoomLevel*lineWidth;
+    //if (ctx.lineWidth < 1) {ctx.lineWidth = 1;}
+    ctx.beginPath();
+
+    // x-axis
+    ctx.moveTo(0, yAxisPos);
+    ctx.lineTo(canvas.width, yAxisPos);
+
+    // y-axis
+    ctx.moveTo(xAxisPos, 0);
+    ctx.lineTo(xAxisPos, canvas.height);
+    
+    ctx.stroke();
 }
 
+/*
+Creates a list of all functions being graphed at the bottom of the page
+*/
 function listFunctions() {
     functionsDiv.innerHTML = "";
     for (let f of storedFunctions) {
