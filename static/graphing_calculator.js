@@ -91,25 +91,29 @@ canvas.addEventListener('mouseup', () => {
 canvas.addEventListener('wheel', (event) => {
     event.preventDefault();
 
-    if (event.deltaY < 0) { // Zooming out
-        zoomLevel /= zoomFactor;
-    }
-    else { // Zooming in
+    // Zoom in or out based on the scroll direction
+    if (event.deltaY < 0) { // Zooming in
         zoomLevel *= zoomFactor;
+        offsetX *= zoomFactor;
+        offsetY *= zoomFactor;
+    } else { // Zooming out
+        zoomLevel /= zoomFactor;
+        offsetX /= zoomFactor;
+        offsetY /= zoomFactor;
     }
 
-    let mouseCanvasX = event.clientX - canvas.offsetLeft;
-    let mouseCanvasY = event.clientY - canvas.offsetTop;
-    let newMouseX = -(mouseCanvasX - canvas.width/2);
-    let newMouseY = -(mouseCanvasY - canvas.height/2);
+    // Calculate the center of the canvas
+    let centerX = canvas.width / 2;
+    let centerY = canvas.height / 2;
 
-    offsetX -= (newMouseX*zoomFactor-newMouseX)/zoomLevel;
-    offsetY -= (newMouseY*zoomFactor-newMouseY)/zoomLevel;
+    // Clear the canvas and redraw the functions
     clear();
     for (let f of storedFunctions) {
         plot(f, -offsetX, -offsetY);
     }
-})
+});
+
+
 
 
 /*
@@ -178,7 +182,7 @@ function plot(func, offsetX, offsetY) {
 
     // Setup the pen
     ctx.strokeStyle = func.color;
-    ctx.lineWidth = 2;    
+    ctx.lineWidth = 2*zoomLevel;    
 
     // Evaluate the function
     const evaluate = new Function("x", `return ${input};`); // Used for evaluating the input function
@@ -203,9 +207,10 @@ function plot(func, offsetX, offsetY) {
             ctx.lineTo(y[i].x, y[i].y);
         }
         else {
-            ctx.moveTo(y[i+1].x, y[i].y)
+            ctx.moveTo(y[i+1].x, 0)
         }
     }
+    plotButton.innerText = y[41000].y;
     ctx.stroke();
     detail = oldDetail;
 }
@@ -275,7 +280,7 @@ function drawGraph() {
 
     // Draw axes
     ctx.strokeStyle = "black";
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 5*zoomLevel;
     ctx.beginPath();
 
     // x-axis
@@ -292,7 +297,7 @@ function drawGraph() {
 
     // Draw gridlines
     ctx.strokeStyle = "lightgray";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = zoomLevel;
     ctx.beginPath();
 
     
