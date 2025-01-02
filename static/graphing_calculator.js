@@ -163,7 +163,7 @@ function makeFunction() {
     }
 
     storedFunctions[storedFunctions.length] = new inputFunction(input, sanitized, funcColor, detailSlider.value);
-    plot(storedFunctions[storedFunctions.length - 1], offsetX, offsetY);
+    plot(storedFunctions[storedFunctions.length - 1], -offsetX, -offsetY);
     listFunctions();
 }
 
@@ -184,19 +184,26 @@ function plot(func, offsetX, offsetY) {
     const evaluate = new Function("x", `return ${input};`); // Used for evaluating the input function
     // Store the outputs
     let y = [];
+
     for (let i = 0; i <= canvas.width; i+=1/detail) {
         x = ((i-canvas.width/2)-offsetX)/(8*zoomLevel);
-        y[detail*i] = evaluate(x);
+        let result = evaluate(x);
+        if (result !== Infinity && !isNaN(result)) {
+            y.push({x: i, y: -(8*zoomLevel*result - canvas.height/2 - offsetY)});
+        }
+        else {
+            y.push({x: i, y: Infinity});
+        }    
     }
     // Draw the function
     ctx.beginPath();
-    ctx.moveTo(0, -(8*y[0]-canvas.height/2 -offsetY));
-    for (let i = 1; i <= canvas.width; i+=1/detail) {
-        if (y[detail*i] !== Infinity && !isNaN(y[detail*i])) {
-            ctx.lineTo(i, -(8*zoomLevel*y[detail*i]-canvas.height/2-offsetY));
+    ctx.moveTo(y[0].x, y[0].y);
+    for (let i = 0; i < y.length; i++) {
+        if (y[i].y !== Infinity && !isNaN(y[i].y)) {
+            ctx.lineTo(y[i].x, y[i].y);
         }
         else {
-            ctx.moveTo(i+0.01, -(8*y[detail*(i+1/detail)]-canvas.height/2-offsetY))
+            ctx.moveTo(y[i+1].x, y[i].y)
         }
     }
     ctx.stroke();
@@ -316,7 +323,7 @@ function listFunctions() {
     for (let f of storedFunctions) {
         functionsDiv.innerHTML += "<div style=\"display: flex;\">" +
                                   "<p>"+f.input+"&nbsp;&nbsp;&nbsp;</p>" +
-                                  "<p>Visible:</p><input type=\"checkbox\" id=\""+f.input+f.color+"\" class=\"functionVisibility\" checked>"; +
+                                  "<p>Visible:</p><input type=\"checkbox\" id=\""+f.input+f.color+"\" class=\"functionVisibility\" checked/>"; +
                                   "</div>"
     }
     let visibilityBoxes = document.querySelectorAll('.functionVisibility');
