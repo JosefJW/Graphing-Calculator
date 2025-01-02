@@ -16,7 +16,16 @@
     <h1>Graphing Calculator</h1>
     <input id="functionInput" type="text" placeholder="Enter a function" />
     <button id="plotButton">Plot</button>
+    <button id="clearButton">Clear Graph</button>
+    <br>
+    Advanced: <input type="checkbox" id="advancedCheckbox" checked>
+    <div id="advanced">
+        Detail: <input id="detailSlider" type="range" min="1" max="1001" value="100" step="100">
+    </div>
     <canvas id="graphCanvas" width="800" height="400"></canvas>
+    <div id="functions">
+        
+    </div>
     <script src="../static/graphing_calculator.js"></script>
 </body>
 </html>
