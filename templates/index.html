@@ -17,10 +17,15 @@
     <input id="functionInput" type="text" placeholder="Enter a function" />
     <button id="plotButton">Plot</button>
     <button id="clearButton">Clear Graph</button>
+    <button id="resetCamera">Reset Camera</button>
     <br>
     Advanced: <input type="checkbox" id="advancedCheckbox" checked>
     <div id="advanced">
-        Detail: <input id="detailSlider" type="range" min="100" max="1000" value="100" step="100">
+        Detail: <input id="detailSlider" type="range" min="100" max="1000" value="100" step="100"> (Caution: Raising detail can cause lag and rendering issues)
+        <br>
+        Gridline Spacing: <input id="gridlineSpacingInput" type="number" value="5" min="1">
+        <br>
+        Line Width: <input id="lineWidthInput" type="number" value="1" min="1">
     </div>
     <canvas id="graphCanvas" width=800 height = 400></canvas>
     <div id="functions">

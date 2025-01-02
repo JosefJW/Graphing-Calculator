@@ -13,6 +13,19 @@ clearButton.addEventListener('click', function() {
     clear();
     storedFunctions = [];
     listFunctions();
+    colorIndex = 0;
+})
+
+// Get reset camera button
+const resetButton = document.getElementById('resetCamera');
+resetButton.addEventListener('click', function() {
+    offsetX = 0;
+    offsetY = 0;
+    zoomLevel = 1;
+    drawGraph();
+    for (let f of storedFunctions) {
+        plot(f, offsetX, offsetY);
+    }
 })
 
 // Get the detail slider
@@ -32,11 +45,40 @@ advancedCheckbox.oninput = function() {
     else {advanced.style.display = 'none';}
 }
 
+// Get gridline spacing input
+const gridlineSpacingInput = document.getElementById('gridlineSpacingInput');
+let gridlineSpacing = 5;
+gridlineSpacingInput.oninput = function() {
+    if (this.value.trim() === "") {return null;}
+    if (this.value < 1) {
+        this.value = 1;
+    }
+    gridlineSpacing = this.value;
+    drawGraph();
+    for (let f of storedFunctions) {
+        plot(f, -offsetX, -offsetY);
+    }
+}
+
+const lineWidthInput = document.getElementById('lineWidthInput');
+let lineWidth = 1;
+lineWidthInput.oninput = function() {
+    if (this.value.trim() === "") {return null;}
+    if (this.value < 1) {
+        this.value = 1;
+    }
+    lineWidth = this.value;
+    drawGraph();
+    for (let f of storedFunctions) {
+        plot(f, -offsetX, -offsetY);
+    }
+}
+
 // Get the functions div
 const functionsDiv = document.getElementById('functions');
 
 // Colors for the graphs
-const colors = ["red", "orange", "#8B8000", "green", "blue", "indigo", "violet"];
+const colors = ["Red", "Orange", "Gold", "Green", "Blue", "Indigo", "Violet"];
 let colorIndex = 0
 
 let storedFunctions = [];
@@ -133,7 +175,6 @@ Clears the canvas and redraws the axes
 function clear() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawGraph();
-    colorIndex = 0;
 }
 
 function makeFunction() {
@@ -182,7 +223,7 @@ function plot(func, offsetX, offsetY) {
 
     // Setup the pen
     ctx.strokeStyle = func.color;
-    ctx.lineWidth = 2*zoomLevel;    
+    ctx.lineWidth = 3*zoomLevel*lineWidth;    
 
     // Evaluate the function
     const evaluate = new Function("x", `return ${input};`); // Used for evaluating the input function
@@ -210,7 +251,6 @@ function plot(func, offsetX, offsetY) {
             ctx.moveTo(y[i+1].x, 0)
         }
     }
-    plotButton.innerText = y[41000].y;
     ctx.stroke();
     detail = oldDetail;
 }
@@ -275,12 +315,13 @@ function validateParentheses(string) {
 Draws the axes and gridlines in the canvas
 */
 function drawGraph() {
-    const gridSpacing = 40*zoomLevel;
+    const gridSpacing = gridlineSpacing*8*zoomLevel;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw axes
     ctx.strokeStyle = "black";
-    ctx.lineWidth = 5*zoomLevel;
+    ctx.lineWidth = 5*zoomLevel*lineWidth;
+    //if (ctx.lineWidth < 1) {ctx.lineWidth = 1;}
     ctx.beginPath();
 
     // x-axis
@@ -297,7 +338,8 @@ function drawGraph() {
 
     // Draw gridlines
     ctx.strokeStyle = "lightgray";
-    ctx.lineWidth = zoomLevel;
+    ctx.lineWidth = zoomLevel*lineWidth;
+    //if (ctx.lineWidth < 0.5) {ctx.lineWidth = 0.5;}
     ctx.beginPath();
 
     
@@ -327,9 +369,15 @@ function listFunctions() {
     functionsDiv.innerHTML = "";
     for (let f of storedFunctions) {
         functionsDiv.innerHTML += "<div style=\"display: flex;\">" +
-                                  "<p>"+f.input+"&nbsp;&nbsp;&nbsp;</p>" +
-                                  "<p>Visible:</p><input type=\"checkbox\" id=\""+f.input+f.color+"\" class=\"functionVisibility\" checked/>"; +
-                                  "</div>"
+                                  "<span>"+f.input+"&nbsp;&nbsp;&nbsp;</span>" +
+                                  "<span>Color:&nbsp;"+f.color+"&nbsp;&nbsp;&nbsp;</span>";
+        if (f.visible) {
+            functionsDiv.innerHTML += "<span>Visible:</span><input type=\"checkbox\" id=\""+f.input+f.color+"\" class=\"functionVisibility\" style=\"display: inline-flex\" checked/>";
+        }
+        else {
+            functionsDiv.innerHTML += "<span>Visible:</span><input type=\"checkbox\" id=\""+f.input+f.color+"\" class=\"functionVisibility\" style=\"display: inline-flex\"/>";
+        }
+        functionsDiv.innerHTML += "</div><br><br>";
     }
     let visibilityBoxes = document.querySelectorAll('.functionVisibility');
     for (let vb of visibilityBoxes) {
