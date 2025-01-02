@@ -52,7 +52,7 @@ let offsetX = 0;
 let offsetY = 0;
 let panX = 0;
 let panY = 0;
-let zoomFactor = 1.1;
+let zoomFactor = 1.05;
 let zoomLevel = 1;
 
 // Mouse Down
@@ -87,6 +87,29 @@ canvas.addEventListener('mouseup', () => {
     }
 })
 
+// Scroll Wheel
+canvas.addEventListener('wheel', (event) => {
+    event.preventDefault();
+
+    if (event.deltaY < 0) { // Zooming out
+        zoomLevel /= zoomFactor;
+    }
+    else { // Zooming in
+        zoomLevel *= zoomFactor;
+    }
+
+    let mouseCanvasX = event.clientX - canvas.offsetLeft;
+    let mouseCanvasY = event.clientY - canvas.offsetTop;
+    let newMouseX = -(mouseCanvasX - canvas.width/2);
+    let newMouseY = -(mouseCanvasY - canvas.height/2);
+
+    offsetX -= (newMouseX*zoomFactor-newMouseX)/zoomLevel;
+    offsetY -= (newMouseY*zoomFactor-newMouseY)/zoomLevel;
+    clear();
+    for (let f of storedFunctions) {
+        plot(f, -offsetX, -offsetY);
+    }
+})
 
 
 /*
@@ -162,7 +185,7 @@ function plot(func, offsetX, offsetY) {
     // Store the outputs
     let y = [];
     for (let i = 0; i <= canvas.width; i+=1/detail) {
-        x = ((i-canvas.width/2)-offsetX)/8;
+        x = ((i-canvas.width/2)-offsetX)/(8*zoomLevel);
         y[detail*i] = evaluate(x);
     }
     // Draw the function
@@ -170,7 +193,7 @@ function plot(func, offsetX, offsetY) {
     ctx.moveTo(0, -(8*y[0]-canvas.height/2 -offsetY));
     for (let i = 1; i <= canvas.width; i+=1/detail) {
         if (y[detail*i] !== Infinity && !isNaN(y[detail*i])) {
-            ctx.lineTo(i, -(8*y[detail*i]-canvas.height/2-offsetY));
+            ctx.lineTo(i, -(8*zoomLevel*y[detail*i]-canvas.height/2-offsetY));
         }
         else {
             ctx.moveTo(i+0.01, -(8*y[detail*(i+1/detail)]-canvas.height/2-offsetY))
@@ -240,12 +263,12 @@ function validateParentheses(string) {
 Draws the axes and gridlines in the canvas
 */
 function drawGraph() {
-    const gridSpacing = 40;
+    const gridSpacing = 40*zoomLevel;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw axes
     ctx.strokeStyle = "black";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 5;
     ctx.beginPath();
 
     // x-axis
@@ -262,17 +285,26 @@ function drawGraph() {
 
     // Draw gridlines
     ctx.strokeStyle = "lightgray";
+    ctx.lineWidth = 1;
     ctx.beginPath();
 
     
     // Vertical
-    for (let i = (-offsetX+panX) % gridSpacing; i < canvas.width; i+=gridSpacing) {
+    for (let i = xAxisPos; i < canvas.width; i+=gridSpacing) {
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+    }
+    for (let i = xAxisPos - gridSpacing; i > 0; i -= gridSpacing) {
         ctx.moveTo(i, 0);
         ctx.lineTo(i, canvas.height);
     }
 
     // Horizontal
-    for (let i = (-offsetY+panY) % gridSpacing; i < canvas.height; i+=gridSpacing) {
+    for (let i = yAxisPos; i < canvas.height; i+=gridSpacing) {
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+    }
+    for (let i = yAxisPos - gridSpacing; i > 0; i -= gridSpacing) {
         ctx.moveTo(0, i);
         ctx.lineTo(canvas.width, i);
     }
