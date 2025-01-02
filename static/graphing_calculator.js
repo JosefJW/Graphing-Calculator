@@ -11,6 +11,8 @@ plotButton.addEventListener('click', function() {
 const clearButton = document.getElementById('clearButton');
 clearButton.addEventListener('click', function() {
     clear();
+    storedFunctions = [];
+    listFunctions();
 })
 
 // Get the detail slider
@@ -37,7 +39,9 @@ const functionsDiv = document.getElementById('functions');
 const colors = ["red", "orange", "#8B8000", "green", "blue", "indigo", "violet"];
 let colorIndex = 0
 
-storedFunctions = [];
+
+
+let storedFunctions = [];
 
 /*
 Stores details for an inputted function
@@ -47,6 +51,7 @@ function inputFunction(input, sanitized, color, detail) {
     this.sanitized = sanitized;
     this.color = color;
     this.detail = detail;
+    this.visible = true;
 }
 
 /*
@@ -56,8 +61,6 @@ function clear() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawGraph();
     colorIndex = 0;
-    storedFunctions = [];
-    listFunctions();
 }
 
 function makeFunction() {
@@ -67,6 +70,7 @@ function makeFunction() {
     if (!input) {
         return null;
     }
+
     let sanitized = input.replace(/\^/g, "**");
     sanitized = sanitized.replace(/(\d)(x)/g, "$1*$2"); // Add * between numbers and x (i.e. 5x --> 5*x)
     sanitized = sanitized.replace(/x\(/g, "x*(")
@@ -98,6 +102,7 @@ function makeFunction() {
 Plots the function in the input field
 */
 function plot(func) {
+    if (!func.visible) {return null;}
     let oldDetail = detailSlider.value;
     detail = func.detail;
     input = func.sanitized;
@@ -111,18 +116,22 @@ function plot(func) {
     // Store the outputs
     let y = [];
     for (let i = 0; i <= canvas.width; i+=1/detail) {
-        x = (i-400)/8;
+        x = (i-canvas.width/2)/8;
         y[detail*i] = evaluate(x);
     }
     // Draw the function
     ctx.beginPath();
     ctx.moveTo(0, -(8*y[0]-200));
     for (let i = 1; i <= canvas.width; i+=1/detail) {
-        if (y[detail*i] !== Infinity && !isNaN(y[detail*i])) {
-            ctx.lineTo(i, -(8*y[detail*i]-200));
+        if (y[detail*i] !== Infinity 
+            && !isNaN(y[detail*i]) 
+            && -(8*y[detail*i]-canvas.height/2) > 0 
+            && (-(8*y[detail*i]-canvas.height/2) < canvas.height 
+                || -(8*y[detail*(i-detail)]-canvas.height/2) < canvas.height)) {
+            ctx.lineTo(i, -(8*y[detail*i]-canvas.height/2));
         }
         else {
-            ctx.moveTo(i+0.01, -(8*y[detail*(i+1/detail)]-200))
+            ctx.moveTo(i+0.01, -(8*y[detail*(i+1/detail)]-canvas.height/2))
         }
     }
     ctx.stroke();
@@ -214,7 +223,22 @@ function drawGraph() {
 function listFunctions() {
     functionsDiv.innerHTML = "";
     for (let f of storedFunctions) {
-        functionsDiv.innerHTML += "<p>"+f.input+"</p>";
+        functionsDiv.innerHTML += "<div style=\"display: flex;\">" +
+                                  "<p>"+f.input+"&nbsp;&nbsp;&nbsp;</p>" +
+                                  "<p>Visible:</p><input type=\"checkbox\" id=\""+f.input+f.color+"\" class=\"functionVisibility\" checked>"; +
+                                  "</div>"
+    }
+    let visibilityBoxes = document.querySelectorAll('.functionVisibility');
+    for (let vb of visibilityBoxes) {
+        vb.oninput = function() {
+            for (let f of storedFunctions) {
+                if (f.input+f.color == this.id) {
+                    f.visible = this.checked;
+                }
+            }
+            clear();
+            for (let f of storedFunctions) {plot(f);}
+        }
     }
 }
 
