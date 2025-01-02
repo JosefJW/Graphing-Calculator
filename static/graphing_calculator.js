@@ -41,9 +41,6 @@ function plot() {
         x = (i-400)/8;
         let func = input.replace("x", x);
         y[i] = evaluate(x);
-        if (i == 200) {
-            button.innerText = y[i];
-        }
     }
 
     ctx.beginPath();
