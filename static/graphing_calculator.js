@@ -39,9 +39,55 @@ const functionsDiv = document.getElementById('functions');
 const colors = ["red", "orange", "#8B8000", "green", "blue", "indigo", "violet"];
 let colorIndex = 0
 
-
-
 let storedFunctions = [];
+
+
+/*
+Mouse Vars and Events
+*/
+let isPanning = false;
+let startX = 0;
+let startY = 0;
+let offsetX = 0;
+let offsetY = 0;
+let panX = 0;
+let panY = 0;
+let zoomFactor = 1.1;
+let zoomLevel = 1;
+
+// Mouse Down
+canvas.addEventListener('mousedown', (event) => {
+    isPanning = true;
+    startX = event.clientX;
+    startY = event.clientY;
+})
+
+// Mouse Move
+canvas.addEventListener('mousemove', (event) => {
+    if (isPanning) {
+        panX = event.clientX - startX;
+        panY = event.clientY - startY;
+        drawGraph();
+        requestAnimationFrame(() => {
+            for (let f of storedFunctions) {
+                plot(f, -offsetX+panX, -offsetY+panY);
+            }
+        });
+    }
+});
+
+// Mouse Up
+canvas.addEventListener('mouseup', () => {
+    if (isPanning) {
+        offsetX -= panX;
+        offsetY -= panY;
+        panX = 0;
+        panY = 0;
+        isPanning = false;
+    }
+})
+
+
 
 /*
 Stores details for an inputted function
@@ -94,14 +140,14 @@ function makeFunction() {
     }
 
     storedFunctions[storedFunctions.length] = new inputFunction(input, sanitized, funcColor, detailSlider.value);
-    plot(storedFunctions[storedFunctions.length - 1]);
+    plot(storedFunctions[storedFunctions.length - 1], offsetX, offsetY);
     listFunctions();
 }
 
 /*
 Plots the function in the input field
 */
-function plot(func) {
+function plot(func, offsetX, offsetY) {
     if (!func.visible) {return null;}
     let oldDetail = detailSlider.value;
     detail = func.detail;
@@ -116,22 +162,18 @@ function plot(func) {
     // Store the outputs
     let y = [];
     for (let i = 0; i <= canvas.width; i+=1/detail) {
-        x = (i-canvas.width/2)/8;
+        x = ((i-canvas.width/2)-offsetX)/8;
         y[detail*i] = evaluate(x);
     }
     // Draw the function
     ctx.beginPath();
-    ctx.moveTo(0, -(8*y[0]-200));
+    ctx.moveTo(0, -(8*y[0]-canvas.height/2 -offsetY));
     for (let i = 1; i <= canvas.width; i+=1/detail) {
-        if (y[detail*i] !== Infinity 
-            && !isNaN(y[detail*i]) 
-            && -(8*y[detail*i]-canvas.height/2) > 0 
-            && (-(8*y[detail*i]-canvas.height/2) < canvas.height 
-                || -(8*y[detail*(i-detail)]-canvas.height/2) < canvas.height)) {
-            ctx.lineTo(i, -(8*y[detail*i]-canvas.height/2));
+        if (y[detail*i] !== Infinity && !isNaN(y[detail*i])) {
+            ctx.lineTo(i, -(8*y[detail*i]-canvas.height/2-offsetY));
         }
         else {
-            ctx.moveTo(i+0.01, -(8*y[detail*(i+1/detail)]-canvas.height/2))
+            ctx.moveTo(i+0.01, -(8*y[detail*(i+1/detail)]-canvas.height/2-offsetY))
         }
     }
     ctx.stroke();
@@ -198,22 +240,39 @@ function validateParentheses(string) {
 Draws the axes and gridlines in the canvas
 */
 function drawGraph() {
+    const gridSpacing = 40;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw axes
     ctx.strokeStyle = "black";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(0, canvas.height/2);
-    ctx.lineTo(canvas.width, canvas.height/2);
-    ctx.moveTo(canvas.width/2, 0);
-    ctx.lineTo(canvas.width/2, canvas.height);
+
+    // x-axis
+    const yAxisPos = canvas.height/2 - offsetY + panY
+    ctx.moveTo(0, yAxisPos);
+    ctx.lineTo(canvas.width, yAxisPos);
+
+    // y-axis
+    const xAxisPos = canvas.width/2 - offsetX + panX
+    ctx.moveTo(xAxisPos, 0);
+    ctx.lineTo(xAxisPos, canvas.height);
+    
     ctx.stroke();
 
+    // Draw gridlines
     ctx.strokeStyle = "lightgray";
     ctx.beginPath();
-    for (let i = 0; i < canvas.width; i+=40) {
+
+    
+    // Vertical
+    for (let i = (-offsetX+panX) % gridSpacing; i < canvas.width; i+=gridSpacing) {
         ctx.moveTo(i, 0);
         ctx.lineTo(i, canvas.height);
     }
-    for (let i = 0; i < canvas.height; i+=40) {
+
+    // Horizontal
+    for (let i = (-offsetY+panY) % gridSpacing; i < canvas.height; i+=gridSpacing) {
         ctx.moveTo(0, i);
         ctx.lineTo(canvas.width, i);
     }
@@ -237,7 +296,7 @@ function listFunctions() {
                 }
             }
             clear();
-            for (let f of storedFunctions) {plot(f);}
+            for (let f of storedFunctions) {plot(f, -offsetX, -offsetY);}
         }
     }
 }
